@@ -9,12 +9,25 @@ export function normalizeVNode(vNode) {
     typeof vNode === "undefined" ||
     typeof vNode === "boolean"
   ) {
-    vNode = "";
-  } else if (typeof vNode === "number") {
-    vNode = vNode.toString();
+    return "";
+  } else if (typeof vNode === "number" || typeof vNode === "string") {
+    return vNode.toString();
   } else if (typeof vNode?.type === "function") {
-    normalizeVNode(vNode.type(vNode?.props || {}));
-  }
+    // "props: vNode.props" => "{ props: {id: abc} }" 로 들어가서 스프레드 연산자 사용
+    const props = { ...(vNode.props || {}), children: vNode.children };
 
-  return vNode;
+    const transfered = vNode.type(props);
+    return normalizeVNode(transfered);
+  }
+  // nNode가 함수 아닌 일반 태그
+
+  // 자식 태그 - children이 함수 아닐때까지 처리해서 뭉텅이 가져오기
+  const nNode = vNode.children
+    .map((v) => normalizeVNode(v))
+    .filter((a) => a || Boolean(a));
+
+  // object spread 연산자로 객체 프로퍼티 업데이트 or 복사 가능
+  // children 태그로 다 풀어진거 합체
+  const asn = { ...vNode, children: nNode };
+  return asn;
 }
